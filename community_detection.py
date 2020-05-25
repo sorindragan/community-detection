@@ -99,10 +99,11 @@ def clauset_newman_moore(G):
 
 def girvan_newman_(G):
     partition = {}
-    # k must be same as no of cliques
+    # k must be same as no of cliques??
     k = 10
     comp = girvan_newman(G)
     limited = itertools.takewhile(lambda c: len(c) < k+1, comp)
+    # TODO: check modularity in networkX and use an epsilon to stop
     for communities in limited:
         pass
 
