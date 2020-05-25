@@ -1,13 +1,27 @@
+import itertools
 import networkx as nx
-from networkx.algorithms.community import greedy_modularity_communities
-from networkx.algorithms.community import girvan_newman
-
+import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 
+import community as community_louvain
+
+from collections import defaultdict
+from networkx.algorithms.community import greedy_modularity_communities
+from networkx.algorithms.community import girvan_newman
 from networkx.generators.community import LFR_benchmark_graph
+from networkx.algorithms.community.quality import coverage, performance
+
+# basic connected caveman community graph
+def generate_caveman_graph():
+    """
+    -> returns a connected caveman graph of l cliques of size k
+    """
+    G = nx.connected_caveman_graph(5, 4)
+    # G = nx.relaxed_caveman_graph(5, 4, 0.2)
+    return G
 
 
-# LFR benchmark graph generator example
+# LFR benchmark graph generator
 def genrate_lfr_graph():
     """
     -> n (int) – number of nodes
@@ -23,50 +37,116 @@ def genrate_lfr_graph():
     -> max_iters (int) – maximum number of iterations
     -> seed (integer, random_state, or None (default)) – indicator of random number generation state
     """
-    n = 250
-    tau1 = 3
-    tau2 = 1.5
-    mu = 0.1
-    G = LFR_benchmark_graph(n, tau1, tau2, mu, average_degree=5,
-                            min_community=20, seed=10)
-    print("generated")
+    params = {"n":100, "tau1":3, "tau2":1.1, "mu":0.1, "avg_degree":5, "max_degree":25, "min_community":5, "max_community":10}
+    # n : 100, tau1 : 3, tau2 : 1.5, mu : 0.01, avg_degree:5, min_community:10, seed:10
+    G = LFR_benchmark_graph(params["n"], params["tau1"], params["tau2"], params["mu"], 
+                            average_degree=params["avg_degree"],
+                            min_community=params["min_community"])
+    print("Generated")
+
     # get the communities from the node attributes of the graph
     communities = {frozenset(G.nodes[v]['community']) for v in G}
     print(f"LFR graph communities: {communities}")
+    
     return G
 
 
 def visualize_graph(G):
     options = {
         'node_color': 'black',
-        'node_size': 100,
-        'width': 3,
+        'node_size': 50,
+        'width': 2,
         }
-    plt.subplot(121)
+    plt.subplot()
     nx.draw(G, **options)
-    # plt.subplot(122)
-    # nx.draw_shell(G, nlist=[range(5, 10), range(5)], with_labels=True, font_weight='bold')
     plt.show()
 
-# apply Clauset-Newman-Moore greedy modularity maximization
+
+def convert_to_sequence(partition):
+    communities_dict = defaultdict(list)
+    for node, c in partition.items():
+        communities_dict[c].append(node)
+    
+    communities = [frozenset(c) for c in communities_dict.values()]
+    return communities
+
+
+def visualize_communities(partition, G, pos, show=True):
+    cmap = cm.get_cmap('viridis', max(partition.values()) + 1)
+    nx.draw_networkx_nodes(G, pos, partition.keys(), node_size=40,
+                        cmap=cmap, node_color=list(partition.values()))
+    nx.draw_networkx_edges(G, pos, alpha=0.5)
+    if show:
+        plt.show()
+
+
+def parallel_display(partitions, G, pos):
+    length = len(partitions)
+    for i in range(length):
+        plt.subplot(1, length, i+1)
+        visualize_communities(partitions[i], G, pos, show=False)
+    plt.show()
+
+
 def clauset_newman_moore(G):
-    c = list(greedy_modularity_communities(G))
-    print(sorted(c[0]))
+    partition = {}
+    communities = greedy_modularity_communities(G)
+    for idx, c in enumerate(communities):
+        for node in c:
+            partition[node] = idx
+    return partition, communities
 
 
-def girvan_newman_2002(G):
-    communities_generator = girvan_newman(G)
-    top_level_communities = next(communities_generator)
-    next_level_communities = next(communities_generator)
-    print(sorted(map(sorted, next_level_communities)))
+def girvan_newman_(G):
+    partition = {}
+    # k must be same as no of cliques
+    k = 10
+    comp = girvan_newman(G)
+    limited = itertools.takewhile(lambda c: len(c) < k+1, comp)
+    for communities in limited:
+        pass
 
+    for idx, c in enumerate(communities):
+        for node in c:
+            partition[node] = idx
+    return partition, communities
+
+
+def louvain(G):
+    partition = community_louvain.best_partition(G)
+    communities = convert_to_sequence(partition)
+    return partition, communities
+
+def individual_runs(G):
+    partition = clauset_newman_moore(G)
+    visualize_communities(partition, G)
+    
+    partition = girvan_newman_(G)
+    visualize_communities(partition, G)
+    
+    partition, communities = louvain(G)
+    visualize_communities(partition, G)
+    
 
 def main():
-    print("start")
+    print("Start process")
+    
+    algorithms = [clauset_newman_moore, girvan_newman_, louvain]
+    
+    # G = generate_caveman_graph()
     G = genrate_lfr_graph()
-    visualize_graph(G)
-    clauset_newman_moore(G)
-    girvan_newman_2002(G)
+    
+    # visualize_graph(G)
+    pos = nx.spring_layout(G)
+
+    results = [alg(G) for alg in algorithms]
+
+    partitions = [r[0] for r in results]
+    communities = [(coverage(G, r[1]), performance(G, r[1]))  for r in results]
+
+    print(communities)
+    parallel_display(partitions, G, pos)
+
 
 if __name__ == "__main__":
     main()
