@@ -1,3 +1,4 @@
+import time
 import itertools
 import networkx as nx
 import matplotlib.cm as cm
@@ -6,13 +7,27 @@ import matplotlib.pyplot as plt
 import community as community_louvain
 
 from collections import defaultdict
+from sklearn.metrics.cluster import normalized_mutual_info_score
 from networkx.algorithms.community import greedy_modularity_communities
 from networkx.algorithms.community import girvan_newman
 from networkx.algorithms.community import modularity
 from networkx.generators.community import LFR_benchmark_graph
 from networkx.algorithms.community.quality import coverage, performance
 
-from karateclub import LabelPropagation
+from karateclub import LabelPropagation, GEMSEC
+
+
+def convert_to_sequence(partition):
+    communities_dict = defaultdict(list)
+    for node, c in partition.items():
+        communities_dict[c].append(node)
+    
+    communities = [frozenset(c) for c in communities_dict.values()]
+    return communities
+
+
+def convert_to_array(partition):
+    return [partition[k] for k in partition]
 
 # basic connected caveman community graph
 def generate_caveman_graph():
@@ -21,6 +36,7 @@ def generate_caveman_graph():
     """
     G = nx.connected_caveman_graph(5, 4)
     # G = nx.relaxed_caveman_graph(5, 4, 0.2)
+
     return G
 
 
@@ -40,18 +56,24 @@ def genrate_lfr_graph():
     -> max_iters (int) – maximum number of iterations
     -> seed (integer, random_state, or None (default)) – indicator of random number generation state
     """
-    params = {"n":100, "tau1":3, "tau2":1.1, "mu":0.1, "avg_degree":5, "max_degree":25, "min_community":5, "max_community":10}
-    # n : 100, tau1 : 3, tau2 : 1.5, mu : 0.01, avg_degree:5, min_community:10, seed:10
+
+    params = {"n":250, "tau1":2, "tau2":1.1, "mu":0.1, "min_degree":20, "max_degree":50}
+    
     G = LFR_benchmark_graph(params["n"], params["tau1"], params["tau2"], params["mu"], 
-                            average_degree=params["avg_degree"],
-                            min_community=params["min_community"])
-    print("Generated")
+                            min_degree=params["min_degree"],
+                            max_degree=params["max_degree"],
+                            max_iters=5000, seed = 10,
+                            )
+    print("Generation Completed")
 
     # get the communities from the node attributes of the graph
-    communities = {frozenset(G.nodes[v]['community']) for v in G}
-    print(f"LFR graph communities: {communities}")
+    comm_list = set([frozenset(G.nodes[v]['community']) for v in G])
+    comm_dict = {comm: idx for idx, comm in enumerate(comm_list)}
+
+    partition = {v:comm_dict[frozenset(G.nodes[v]['community'])] for v in G}
+    communities = convert_to_sequence(partition)
     
-    return G
+    return G, partition, communities
 
 def visualize_graph(G):
     options = {
@@ -62,16 +84,6 @@ def visualize_graph(G):
     plt.subplot()
     nx.draw(G, **options)
     plt.show()
-
-
-def convert_to_sequence(partition):
-    communities_dict = defaultdict(list)
-    for node, c in partition.items():
-        communities_dict[c].append(node)
-    
-    communities = [frozenset(c) for c in communities_dict.values()]
-    return communities
-
 
 def visualize_communities(partition, G, pos, show=True):
     cmap = cm.get_cmap('viridis', max(partition.values()) + 1)
@@ -89,10 +101,11 @@ def parallel_display(partitions, G, pos):
         visualize_communities(partitions[i], G, pos, show=False)
     plt.show()
 
-
 def clauset_newman_moore(G):
     partition = {}
+    start_time = time.time()
     communities = greedy_modularity_communities(G)
+    print(f"Clauset Newman Moore ran in {time.time() - start_time} seconds")
     for idx, c in enumerate(communities):
         for node in c:
             partition[node] = idx
@@ -102,47 +115,70 @@ def clauset_newman_moore(G):
 def girvan_newman_(G, limit=False):
     partition = {}
     epsilon = 0.001
+    modularity_ = -1
+    last_communities = []
+
+    start_time = time.time()
     com_gen = girvan_newman(G)
     
     if limit:
         limited = itertools.takewhile(lambda c: len(c) < limit, com_gen)
         com_gen = limited
-    
-    modularity_ = -1
-    last_communities = []
-    
-    for communities in com_gen:
+
+    for round_, communities in enumerate(com_gen):
         curr_modularity = modularity(G, communities)
+        print(round_, curr_modularity, modularity_, curr_modularity - modularity_)
         if (curr_modularity - modularity_) < epsilon:
             communities = last_communities
             break
         modularity_ = curr_modularity
         last_communities = communities
+    print(f"Girvan Newman ran in {time.time() - start_time} seconds and needed {round_} iterations")
 
 
     for idx, c in enumerate(communities):
         for node in c:
             partition[node] = idx
+    
     return partition, communities
 
 
 def louvain(G):
+    start_time = time.time()
     partition = community_louvain.best_partition(G)
+    print(f"Louvain ran in {time.time() - start_time} seconds")
+
     communities = convert_to_sequence(partition)
     return partition, communities
 
 
-def karateclub_algorithms(G, pos):
+def label_propagation(G):
     model = LabelPropagation()
+    start_time = time.time()
     model.fit(G)
     partition = model.get_memberships()
-    print(partition)
-    visualize_communities(partition, G, pos)
+    print(f"Label Propagation ran in {time.time() - start_time} seconds")
+    communities = convert_to_sequence(partition)
+    return partition, communities
+
+def gemsec_random_walks(G):
+    model = GEMSEC()
+    start_time = time.time()
+    model.fit(G)
+    partition = model.get_memberships()
+    print(f"GEMSEC ran in {time.time() - start_time} seconds")
+    communities = convert_to_sequence(partition)
+    return partition, communities
 
 
-def individual_runs(G, pos):
+def individual_runs(G, pos, target_partition=[]):
     partition, communities = clauset_newman_moore(G)
     visualize_communities(partition, G, pos)
+   
+    nmi = normalized_mutual_info_score(convert_to_array(target_partition),
+                                       convert_to_array(partition))
+    print('NMI: {:.4f}'.format(nmi))
+
     
     partition, communities = girvan_newman_(G)
     visualize_communities(partition, G, pos)
@@ -150,29 +186,48 @@ def individual_runs(G, pos):
     partition, communities = louvain(G)
     visualize_communities(partition, G, pos)
 
+    partition, communities = label_propagation(G, pos)
+    visualize_communities(partition, G, pos)
+
+    partition, communities = gemsec_random_walks(G)
+    visualize_communities(partition, G, pos)
+
+
 def main():
     print("Start process")
     
-    algorithms = [clauset_newman_moore, girvan_newman_, louvain]
+    nx_algorithms = [clauset_newman_moore, girvan_newman_, louvain]
+    karate_algorithms = [label_propagation, gemsec_random_walks]
     
-    G = generate_caveman_graph()
-    # G = genrate_lfr_graph()
+    # G = generate_caveman_graph()
+    G, target_partition, target_communities = genrate_lfr_graph()
     
     # visualize_graph(G)
     pos = nx.spring_layout(G)
 
-    # results = [alg(G) for alg in algorithms]
+    # networkx algorithms
+    results = [alg(G) for alg in nx_algorithms]
 
-    # partitions = [r[0] for r in results]
-    # communities = [(coverage(G, r[1]), performance(G, r[1]))  for r in results]
+    partitions = [r[0] for r in results]
+    performances = [(coverage(G, r[1]), performance(G, r[1]), 
+                    normalized_mutual_info_score(convert_to_array(target_partition), convert_to_array(r[1])))  
+                    for r in results]
 
-    # print(communities)
-    # parallel_display(partitions, G, pos)
+    print(performances)
+    parallel_display(partitions, G, pos)
 
-    # individual_runs(G, pos)
+    # karate club algorithms
+    results = [alg(G) for alg in karate_algorithms]
 
-    karateclub_algorithms(G, pos)
+    partitions = [r[0] for r in results]
+    performances = [(coverage(G, r[1]), performance(G, r[1]), 
+                    normalized_mutual_info_score(convert_to_array(target_partition), convert_to_array(r[1])))  
+                    for r in results]
 
+    print(performances)
+    parallel_display(partitions, G, pos)
+
+    individual_runs(G, pos, target_partition=target_partition)
 
 if __name__ == "__main__":
     main()
