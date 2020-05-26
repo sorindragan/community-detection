@@ -8,8 +8,11 @@ import community as community_louvain
 from collections import defaultdict
 from networkx.algorithms.community import greedy_modularity_communities
 from networkx.algorithms.community import girvan_newman
+from networkx.algorithms.community import modularity
 from networkx.generators.community import LFR_benchmark_graph
 from networkx.algorithms.community.quality import coverage, performance
+
+from karateclub import LabelPropagation
 
 # basic connected caveman community graph
 def generate_caveman_graph():
@@ -49,7 +52,6 @@ def genrate_lfr_graph():
     print(f"LFR graph communities: {communities}")
     
     return G
-
 
 def visualize_graph(G):
     options = {
@@ -97,15 +99,26 @@ def clauset_newman_moore(G):
     return partition, communities
 
 
-def girvan_newman_(G):
+def girvan_newman_(G, limit=False):
     partition = {}
-    # k must be same as no of cliques??
-    k = 10
-    comp = girvan_newman(G)
-    limited = itertools.takewhile(lambda c: len(c) < k+1, comp)
-    # TODO: check modularity in networkX and use an epsilon to stop
-    for communities in limited:
-        pass
+    epsilon = 0.001
+    com_gen = girvan_newman(G)
+    
+    if limit:
+        limited = itertools.takewhile(lambda c: len(c) < limit, com_gen)
+        com_gen = limited
+    
+    modularity_ = -1
+    last_communities = []
+    
+    for communities in com_gen:
+        curr_modularity = modularity(G, communities)
+        if (curr_modularity - modularity_) < epsilon:
+            communities = last_communities
+            break
+        modularity_ = curr_modularity
+        last_communities = communities
+
 
     for idx, c in enumerate(communities):
         for node in c:
@@ -118,35 +131,47 @@ def louvain(G):
     communities = convert_to_sequence(partition)
     return partition, communities
 
-def individual_runs(G):
-    partition = clauset_newman_moore(G)
-    visualize_communities(partition, G)
+
+def karateclub_algorithms(G, pos):
+    model = LabelPropagation()
+    model.fit(G)
+    partition = model.get_memberships()
+    print(partition)
+    visualize_communities(partition, G, pos)
+
+
+def individual_runs(G, pos):
+    partition, communities = clauset_newman_moore(G)
+    visualize_communities(partition, G, pos)
     
-    partition = girvan_newman_(G)
-    visualize_communities(partition, G)
+    partition, communities = girvan_newman_(G)
+    visualize_communities(partition, G, pos)
     
     partition, communities = louvain(G)
-    visualize_communities(partition, G)
-    
+    visualize_communities(partition, G, pos)
 
 def main():
     print("Start process")
     
     algorithms = [clauset_newman_moore, girvan_newman_, louvain]
     
-    # G = generate_caveman_graph()
-    G = genrate_lfr_graph()
+    G = generate_caveman_graph()
+    # G = genrate_lfr_graph()
     
     # visualize_graph(G)
     pos = nx.spring_layout(G)
 
-    results = [alg(G) for alg in algorithms]
+    # results = [alg(G) for alg in algorithms]
 
-    partitions = [r[0] for r in results]
-    communities = [(coverage(G, r[1]), performance(G, r[1]))  for r in results]
+    # partitions = [r[0] for r in results]
+    # communities = [(coverage(G, r[1]), performance(G, r[1]))  for r in results]
 
-    print(communities)
-    parallel_display(partitions, G, pos)
+    # print(communities)
+    # parallel_display(partitions, G, pos)
+
+    # individual_runs(G, pos)
+
+    karateclub_algorithms(G, pos)
 
 
 if __name__ == "__main__":
