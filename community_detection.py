@@ -27,6 +27,7 @@ def convert_to_sequence(partition):
 
 
 def convert_to_array(partition):
+    partition = dict(sorted(partition.items()))
     return [partition[k] for k in partition]
 
 # basic connected caveman community graph
@@ -72,6 +73,7 @@ def genrate_lfr_graph():
 
     partition = {v:comm_dict[frozenset(G.nodes[v]['community'])] for v in G}
     communities = convert_to_sequence(partition)
+    # print(partition)
     
     return G, partition, communities
 
@@ -147,7 +149,6 @@ def louvain(G):
     start_time = time.time()
     partition = community_louvain.best_partition(G)
     print(f"Louvain ran in {time.time() - start_time} seconds")
-
     communities = convert_to_sequence(partition)
     return partition, communities
 
@@ -174,29 +175,34 @@ def gemsec_random_walks(G):
 def individual_runs(G, pos, target_partition=[]):
     partition, communities = clauset_newman_moore(G)
     visualize_communities(partition, G, pos)
-   
+    
     nmi = normalized_mutual_info_score(convert_to_array(target_partition),
                                        convert_to_array(partition))
     print('NMI: {:.4f}'.format(nmi))
 
     
-    partition, communities = girvan_newman_(G)
-    visualize_communities(partition, G, pos)
+    # partition, communities = girvan_newman_(G)
+    # visualize_communities(partition, G, pos)
     
     partition, communities = louvain(G)
     visualize_communities(partition, G, pos)
+    
+    nmi = normalized_mutual_info_score(convert_to_array(target_partition),
+                                       convert_to_array(partition))
+    print('NMI: {:.4f}'.format(nmi))
 
-    partition, communities = label_propagation(G, pos)
-    visualize_communities(partition, G, pos)
+    # partition, communities = label_propagation(G, pos)
+    # visualize_communities(partition, G, pos)
 
-    partition, communities = gemsec_random_walks(G)
-    visualize_communities(partition, G, pos)
+    # partition, communities = gemsec_random_walks(G)
+    # visualize_communities(partition, G, pos)
 
 
 def main():
     print("Start process")
     
-    nx_algorithms = [clauset_newman_moore, girvan_newman_, louvain]
+    # nx_algorithms = [clauset_newman_moore, girvan_newman_, louvain]
+    nx_algorithms = [clauset_newman_moore, louvain]
     karate_algorithms = [label_propagation, gemsec_random_walks]
     
     # G = generate_caveman_graph()
@@ -210,7 +216,7 @@ def main():
 
     partitions = [r[0] for r in results]
     performances = [(coverage(G, r[1]), performance(G, r[1]), 
-                    normalized_mutual_info_score(convert_to_array(target_partition), convert_to_array(r[1])))  
+                    normalized_mutual_info_score(convert_to_array(target_partition), convert_to_array(r[0])))  
                     for r in results]
 
     print(performances)
@@ -221,13 +227,13 @@ def main():
 
     partitions = [r[0] for r in results]
     performances = [(coverage(G, r[1]), performance(G, r[1]), 
-                    normalized_mutual_info_score(convert_to_array(target_partition), convert_to_array(r[1])))  
+                    normalized_mutual_info_score(convert_to_array(target_partition), convert_to_array(r[0])))  
                     for r in results]
 
     print(performances)
     parallel_display(partitions, G, pos)
 
-    individual_runs(G, pos, target_partition=target_partition)
+    # individual_runs(G, pos, target_partition=target_partition)
 
 if __name__ == "__main__":
     main()
