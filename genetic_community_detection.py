@@ -38,22 +38,14 @@ def initialization(G, nodes, pop_size=42, alpha=0.4):
             
 
 def cross_over(chrom1, chrom2, theta=0.2):
-    child1 = np.array(chrom1) 
-    child2 = np.array(chrom2)
+    child = np.array(chrom2)
     for _ in range(int(len(chrom1) * 0.2)):
         comm = np.random.choice(chrom1)
         vertices = np.where(chrom1==comm)[0]
         chrom1 = np.array(chrom1)
         child2[vertices] = chrom1[vertices]
-    
-    # for _ in range(int(len(chrom2) * 0.2)):
-    #     comm = np.random.choice(chrom2)
-    #     vertices = np.where(chrom2 == comm)[0]
-    #     chrom2 = np.array(chrom2)
-    #     child1[vertices] = chrom2[vertices]
 
-
-    return list(child2)#, list(child1)
+    return list(child)
 
 
 def mutation(chrom, xi=0.5):
@@ -76,19 +68,15 @@ def get_next_generation(G, population, beta=0.1):
     cut_point = int(beta*length)
    
     ranked_population = list(rank(G, population).values())
-    # print(modularity(dict(enumerate(ranked_population[0])), G))
-    # print(modularity(dict(enumerate(ranked_population[1])), G))
-
 
     beta_population = ranked_population[:cut_point].copy()
     rest_population = ranked_population.copy()
 
-
     new_population = []
     for i in range(0, len(rest_population)-1):
-        c1 = cross_over(rest_population[i], rest_population[i+1])
-        new_population.append(c1)
-        # new_population.append(c2)
+        c = cross_over(rest_population[i], rest_population[i+1])
+        new_population.append(c)
+
     new_population.append(cross_over(rest_population[0], rest_population[-1]))
   
     for i in range(len(new_population)):
@@ -104,18 +92,18 @@ def main():
     old_population = []
     for i in range(100):
         if i % 10 == 0:
-            print("PULA")
+            print("POPULATION")
             print(population[0])
             print([idx if old_population[idx] == population[0][idx] else None for idx in range(len(population))])            old_population = population[0]
-            print(f"SHITTY STEPS: {i}")
+            print(f"STEP: {i}")
             partition = dict(enumerate(population[0]))
-            print(f"THIS IS A PRETTY THING: {modularity(partition, G)}")
+            print(f"MODULARITY: {modularity(partition, G)}")
 
         population = get_next_generation(G, population)
     
     
     partition = dict(enumerate(population[0]))
-    print(f"THIS IS A PRETTY THING: {modularity(partition, G)}")
+    print(f"LAST MODULARITY: {modularity(partition, G)}")
     pos = nx.spring_layout(G)
     cmap = cm.get_cmap('viridis', max(partition.values()) + 1)
     nx.draw_networkx_nodes(G, pos, partition.keys(), node_size=40,
