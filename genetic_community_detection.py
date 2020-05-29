@@ -7,7 +7,6 @@ from networkx.generators.community import LFR_benchmark_graph
 from community import modularity
 
 
-
 def generate_graph():
     # G = nx.relaxed_caveman_graph(5, 4, 0.6)
     # G = nx.connected_caveman_graph(5, 4)
