@@ -1,115 +1,113 @@
-import networkx as nx
-import numpy as np
+import time
 import itertools
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-from networkx.generators.community import LFR_benchmark_graph
+import numpy as np
+import networkx as nx
+
+from collections import defaultdict
 from community import modularity
 
+class GCM():
 
-def generate_graph():
-    # G = nx.relaxed_caveman_graph(5, 4, 0.6)
-    # G = nx.connected_caveman_graph(5, 4)
-    # G = nx.karate_club_graph()
-    params = {"n": 250, "tau1": 2, "tau2": 1.1,
-         "mu": 0.1, "min_degree": 20, "max_degree": 50}
+    def __init__(self, iterations=50, pop_size=42, alpha=0.4, theta=0.2, xi=0.5, beta=0.1,
+                 fitness_func=modularity):
+        self.iterations     = iterations
+        self.pop_size       = pop_size
+        self.alpha          = alpha
+        self.theta          = theta
+        self.xi             = xi
+        self.beta           = beta
+        self.fitness_func   = fitness_func
+    
+    def convert_to_sequence(self, partition):
+        communities_dict = defaultdict(list)
+        for node, c in partition.items():
+            communities_dict[c].append(node)
 
-    G = LFR_benchmark_graph(params["n"], params["tau1"], params["tau2"], params["mu"], 
-                            min_degree=params["min_degree"],
-                            max_degree=params["max_degree"],
-                            max_iters=5000, seed = 10,
-                            )
-    return G
+        communities = [frozenset(c) for c in communities_dict.values()]
+        return communities
 
 
-def initialization(G, nodes, pop_size=42, alpha=0.4):
-    population = {idx:list(nodes) for idx in range(pop_size)}
-    for name, individual in population.items():
-        for _ in range(int(pop_size*alpha)):
-            random_node = np.random.randint(len(individual))
-            while not G[random_node]:
+    def initialization(self, G, nodes):
+        population = {idx:list(nodes) for idx in range(self.pop_size)}
+        for name, individual in population.items():
+            for _ in range(int(self.pop_size*self.alpha)):
                 random_node = np.random.randint(len(individual))
+                while not G[random_node]:
+                    random_node = np.random.randint(len(individual))
 
-            population[name][random_node] = np.random.choice(
-                list(G[random_node]))
+                population[name][random_node] = np.random.choice(
+                    list(G[random_node]))
+        
+        return population
+                
+
+    def cross_over(self, chrom1, chrom2):
+        child = np.array(chrom2)
+        for _ in range(int(len(chrom1) * self.theta)):
+            comm = np.random.choice(chrom1)
+            vertices = np.where(chrom1==comm)[0]
+            chrom1 = np.array(chrom1)
+            child[vertices] = chrom1[vertices]
+
+        return list(child)
+
+
+    def mutation(self, chrom):
+        for _ in range(int(len(chrom) * self.xi)):
+            v1 = np.random.randint(len(chrom))
+            v2 = np.random.randint(len(chrom))
+            chrom[v1] = chrom[v2]
+        return chrom
+
+
+    def rank(self, G, population):
+        return dict(sorted(population.items(),
+                            key=lambda x: self.fitness_func(dict(enumerate(x[1])), G),
+                            reverse=True)
+                            )
+
+
+    def get_next_generation(self, G, population):
+        length = len(population)
+        cut_point = int(self.beta * length)
     
-    return population
-            
+        ranked_population = list(self.rank(G, population).values())
 
-def cross_over(chrom1, chrom2, theta=0.2):
-    child = np.array(chrom2)
-    for _ in range(int(len(chrom1) * 0.2)):
-        comm = np.random.choice(chrom1)
-        vertices = np.where(chrom1==comm)[0]
-        chrom1 = np.array(chrom1)
-        child2[vertices] = chrom1[vertices]
+        beta_population = ranked_population[:cut_point].copy()
+        rest_population = ranked_population.copy()
 
-    return list(child)
+        new_population = []
+        for i in range(0, len(rest_population)-1):
+            c = self.cross_over(rest_population[i], rest_population[i+1])
+            new_population.append(c)
 
-
-def mutation(chrom, xi=0.5):
-    for _ in range(int(len(chrom)*xi)):
-        v1 = np.random.randint(len(chrom))
-        v2 = np.random.randint(len(chrom))
-        chrom[v1] = chrom[v2]
-    return chrom
-
-
-def rank(G, population, fitness_func=modularity):
-    return dict(sorted(population.items(),
-                          key=lambda x: fitness_func(dict(enumerate(x[1])), G),
-                          reverse=True)
-                          )
-
-
-def get_next_generation(G, population, beta=0.1):
-    length = len(population)
-    cut_point = int(beta*length)
-   
-    ranked_population = list(rank(G, population).values())
-
-    beta_population = ranked_population[:cut_point].copy()
-    rest_population = ranked_population.copy()
-
-    new_population = []
-    for i in range(0, len(rest_population)-1):
-        c = cross_over(rest_population[i], rest_population[i+1])
-        new_population.append(c)
-
-    new_population.append(cross_over(rest_population[0], rest_population[-1]))
-  
-    for i in range(len(new_population)):
-        new_population[i] = mutation(new_population[i])
+        new_population.append(self.cross_over(rest_population[0], rest_population[-1]))
     
-    return dict(enumerate((beta_population + new_population)[:len(population)]))
+        for i in range(len(new_population)):
+            new_population[i] = self.mutation(new_population[i])
+        
+        return dict(enumerate((beta_population + new_population)[:len(population)]))
 
 
-def main():
-    G = generate_graph()
-    nodes = G.nodes()
-    population = initialization(G, nodes, pop_size=200)
-    old_population = []
-    for i in range(100):
-        if i % 10 == 0:
-            print("POPULATION")
-            print(population[0])
-            print([idx if old_population[idx] == population[0][idx] else None for idx in range(len(population))])            old_population = population[0]
-            print(f"STEP: {i}")
-            partition = dict(enumerate(population[0]))
-            print(f"MODULARITY: {modularity(partition, G)}")
+    def gcm(self, G):
+        nodes = G.nodes()
+        self.iterations = len(nodes) * 5 if self.iterations == 50 else self.iterations
+        self.pop_size = len(nodes) * 3 if self.pop_size == 42 else self.pop_size
 
-        population = get_next_generation(G, population)
-    
-    
-    partition = dict(enumerate(population[0]))
-    print(f"LAST MODULARITY: {modularity(partition, G)}")
-    pos = nx.spring_layout(G)
-    cmap = cm.get_cmap('viridis', max(partition.values()) + 1)
-    nx.draw_networkx_nodes(G, pos, partition.keys(), node_size=40,
-                           cmap=cmap, node_color=list(partition.values()))
-    nx.draw_networkx_edges(G, pos, alpha=0.5)
-    plt.show()
+        start_time = time.time()
 
-if __name__ == "__main__":
-    main()
+        population = self.initialization(G, nodes)
+        for i in range(self.iterations):
+            if i % 10 == 0:
+                print(f"POPULATION: {population[0]}")
+                print(f"STEP: {i}")
+                partition = dict(enumerate(population[0]))
+                print(f"MODULARITY: {modularity(partition, G)}")
+
+            population = self.get_next_generation(G, population)
+        
+        print(f"GCM ran in {time.time() - start_time} seconds")
+        
+        partition = dict(enumerate(population[0]))
+        return partition, self.convert_to_sequence(partition)
 

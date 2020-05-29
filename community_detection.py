@@ -5,16 +5,17 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 
 import community as community_louvain
+from community import modularity as community_modularity
 
 from collections import defaultdict
 from sklearn.metrics.cluster import normalized_mutual_info_score
 from networkx.algorithms.community import greedy_modularity_communities
-from networkx.algorithms.community import girvan_newman
 from networkx.algorithms.community import modularity
 from networkx.generators.community import LFR_benchmark_graph
 from networkx.algorithms.community.quality import coverage, performance
 
-from karateclub import LabelPropagation, GEMSEC
+from genetic_community_detection import GCM
+
 
 
 def convert_to_sequence(partition):
@@ -162,7 +163,7 @@ def non_lfr_runs(algorithms):
 
     parallel_display(partitions, karate_g, pos)
 
-    # simple Caveman graph
+    simple Caveman graph
     caveman_g = generate_caveman_graph(cliques=4, size=6)
     pos = nx.spring_layout(caveman_g)
     results = [alg(caveman_g) for alg in algorithms]
@@ -191,13 +192,14 @@ def non_lfr_runs(algorithms):
 def main():
     print("Start process")
     
-    algorithms = [clauset_newman_moore, louvain]    
+    gcm = GCM()
+    algorithms = [clauset_newman_moore, louvain, gcm.gcm]
 
     # small graphs
     non_lfr_runs(algorithms)
 
 
-    # lfr benchmark graphs
+    lfr benchmark graphs
     sizes = [250, 500, 600, 700, 800, 900, 1000, 1200, 2000, 2500, 2800, 3000]
     for n in sizes:
         G, target_partition, target_communities = genrate_lfr_graph(size=n)
