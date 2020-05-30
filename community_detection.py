@@ -163,7 +163,7 @@ def non_lfr_runs(algorithms):
 
     parallel_display(partitions, karate_g, pos)
 
-    simple Caveman graph
+    # simple Caveman graph
     caveman_g = generate_caveman_graph(cliques=4, size=6)
     pos = nx.spring_layout(caveman_g)
     results = [alg(caveman_g) for alg in algorithms]
@@ -196,34 +196,39 @@ def main():
     algorithms = [clauset_newman_moore, louvain, gcm.gcm]
 
     # small graphs
-    non_lfr_runs(algorithms)
+    # non_lfr_runs(algorithms)
+
+    G, target_partition, target_communities = genrate_lfr_graph(size=250)
+    
 
 
-    lfr benchmark graphs
-    sizes = [250, 500, 600, 700, 800, 900, 1000, 1200, 2000, 2500, 2800, 3000]
-    for n in sizes:
-        G, target_partition, target_communities = genrate_lfr_graph(size=n)
-        # visualize_graph(G)
-        pos = nx.spring_layout(G)
 
-        results = [alg(G) for alg in algorithms]
-        partitions = [r[0] for r in results]
 
-        metrics = [(coverage(G, r[1]), performance(G, r[1]), 
-                    normalized_mutual_info_score(convert_to_array(target_partition), 
-                                                 convert_to_array(r[0])
-                                                ))
-                    for r in results]
+    # lfr benchmark graphs
+    # sizes = [250, 500, 600, 700, 800, 900, 1000, 1200, 2000, 2500, 2800, 3000]
+    # for n in sizes:
+    #     G, target_partition, target_communities = genrate_lfr_graph(size=n)
+    #     # visualize_graph(G)
+    #     pos = nx.spring_layout(G)
+
+    #     results = [alg(G) for alg in algorithms]
+    #     partitions = [r[0] for r in results]
+
+    #     metrics = [(coverage(G, r[1]), performance(G, r[1]), 
+    #                 normalized_mutual_info_score(convert_to_array(target_partition), 
+    #                                              convert_to_array(r[0])
+    #                                             ))
+    #                 for r in results]
         
-        for idx in range(len(metrics)):
-            print(
-                f"The coverage obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][0])
-            print(
-                f"The performance obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][1])
-            print(
-                f"The NMI score obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][2])
+    #     for idx in range(len(metrics)):
+    #         print(
+    #             f"The coverage obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][0])
+    #         print(
+    #             f"The performance obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][1])
+    #         print(
+    #             f"The NMI score obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][2])
 
-        parallel_display(partitions, G, pos)
+    #     parallel_display(partitions, G, pos)
 
 if __name__ == "__main__":
     main()

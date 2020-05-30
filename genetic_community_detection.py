@@ -8,7 +8,7 @@ from community import modularity
 
 class GCM():
 
-    def __init__(self, iterations=50, pop_size=42, alpha=0.4, theta=0.2, xi=0.5, beta=0.1,
+    def __init__(self, iterations=-1, pop_size=-1, alpha=0.4, theta=0.2, xi=0.5, beta=0.1,
                  fitness_func=modularity):
         self.iterations     = iterations
         self.pop_size       = pop_size
@@ -91,8 +91,8 @@ class GCM():
 
     def gcm(self, G):
         nodes = G.nodes()
-        self.iterations = len(nodes) * 5 if self.iterations == 50 else self.iterations
-        self.pop_size = len(nodes) * 3 if self.pop_size == 42 else self.pop_size
+        self.iterations = len(nodes) * 5 if self.iterations == -1 else self.iterations
+        self.pop_size = len(nodes) * 3 if self.pop_size == -1 else self.pop_size
 
         start_time = time.time()
 
