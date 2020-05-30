@@ -67,7 +67,7 @@ class GCM():
                             )
 
 
-    def get_next_generation(self, G, population):
+    def get_next_generation(self, G, population, r=0.2):
         length = len(population)
         cut_point = int(self.beta * length)
     
@@ -75,6 +75,7 @@ class GCM():
 
         beta_population = ranked_population[:cut_point].copy()
         rest_population = ranked_population.copy()
+        np.random.shuffle(rest_population)
 
         new_population = []
         for i in range(0, len(rest_population)-1):
@@ -86,7 +87,9 @@ class GCM():
         for i in range(len(new_population)):
             new_population[i] = self.mutation(new_population[i])
         
-        return dict(enumerate((beta_population + new_population)[:len(population)]))
+        new_generation = (beta_population +
+                          new_population)[:int(len(population)*(1-r))] + list(self.initialization(G, G.nodes()).values())[:int(len(population)*r)]
+        return dict(enumerate(new_generation))
 
 
     def gcm(self, G):
@@ -98,11 +101,11 @@ class GCM():
 
         population = self.initialization(G, nodes)
         for i in range(self.iterations):
-            if i % 10 == 0:
-                print(f"POPULATION: {population[0]}")
-                print(f"STEP: {i}")
-                partition = dict(enumerate(population[0]))
-                print(f"MODULARITY: {modularity(partition, G)}")
+            if i % 20 == 0:
+                print(f"Best Candidate: {population[0]}")
+                print(f"Step: {i} out of {self.iterations}")
+                print(
+                    f"Current modularity: {modularity(dict(enumerate(population[0])), G)}")
 
             population = self.get_next_generation(G, population)
         

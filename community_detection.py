@@ -1,3 +1,4 @@
+import os
 import time
 import itertools
 import networkx as nx
@@ -122,6 +123,28 @@ def louvain(G):
     communities = convert_to_sequence(partition)
     return partition, communities
 
+
+def reneel(G):
+    with open("RenEEL-Modularity-master/karate.txt", "w") as f:
+        for e1, e2 in G.edges():
+            f.write(str(e1+1) + " " + str(e2+1) + "\n")
+
+    start_time = time.time()
+    os.system('cd RenEEL-Modularity-master/;make')
+    print(f"RenEEL-Modularity-based ran in {time.time() - start_time} seconds")
+
+    with open("RenEEL-Modularity-master/partition.txt", "r") as f:
+        reneel_partition = dict(
+            enumerate([int(e.strip())-1 for e in list(f.readlines())]))
+    
+    reneel_communities = convert_to_sequence(reneel_partition)
+
+    os.system('cd RenEEL-Modularity-master/;make clean')
+
+    return reneel_partition, reneel_communities
+
+
+
 def individual_runs(G, pos, target_partition=[]):
     partition, communities = clauset_newman_moore(G)
     visualize_communities(partition, G, pos)
@@ -189,46 +212,42 @@ def non_lfr_runs(algorithms):
 
 
 
+
+
 def main():
     print("Start process")
     
     gcm = GCM()
-    algorithms = [clauset_newman_moore, louvain, gcm.gcm]
+    algorithms = [clauset_newman_moore, louvain, reneel, gcm.gcm]
 
     # small graphs
-    # non_lfr_runs(algorithms)
-
-    G, target_partition, target_communities = genrate_lfr_graph(size=250)
-    
-
-
-
+    non_lfr_runs(algorithms)
 
     # lfr benchmark graphs
-    # sizes = [250, 500, 600, 700, 800, 900, 1000, 1200, 2000, 2500, 2800, 3000]
-    # for n in sizes:
-    #     G, target_partition, target_communities = genrate_lfr_graph(size=n)
-    #     # visualize_graph(G)
-    #     pos = nx.spring_layout(G)
+    sizes = [250, 500, 600, 700, 800, 900, 1000, 1200, 2000, 2500, 2800, 3000]
+    for n in sizes:
+        G, target_partition, target_communities = genrate_lfr_graph(size=n)
+        # visualize_graph(G)
+        pos = nx.spring_layout(G)
 
-    #     results = [alg(G) for alg in algorithms]
-    #     partitions = [r[0] for r in results]
+        results = [alg(G) for alg in algorithms]
+        partitions = [r[0] for r in results]
 
-    #     metrics = [(coverage(G, r[1]), performance(G, r[1]), 
-    #                 normalized_mutual_info_score(convert_to_array(target_partition), 
-    #                                              convert_to_array(r[0])
-    #                                             ))
-    #                 for r in results]
+        metrics = [(coverage(G, r[1]), performance(G, r[1]), 
+                    normalized_mutual_info_score(convert_to_array(target_partition), 
+                                                 convert_to_array(r[0])
+                                                ))
+                    for r in results]
         
-    #     for idx in range(len(metrics)):
-    #         print(
-    #             f"The coverage obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][0])
-    #         print(
-    #             f"The performance obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][1])
-    #         print(
-    #             f"The NMI score obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][2])
+        for idx in range(len(metrics)):
+            print(
+                f"The coverage obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][0])
+            print(
+                f"The performance obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][1])
+            print(
+                f"The NMI score obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][2])
 
-    #     parallel_display(partitions, G, pos)
+        parallel_display(partitions, G, pos)
 
 if __name__ == "__main__":
     main()

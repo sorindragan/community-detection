@@ -4,7 +4,7 @@ all: prepare reneel.out run
 # argument 2: Positive Integer, maximum and initial ensemble size of partitions used in RenEEL
 # argument 3: Positive Integer, ensemble size of partitions of the reduced network for iteration part in RenEEL
 run: reneel.out
-	./reneel.out 2 10 5
+	./reneel.out 2 50 20
 
 reneel.out: main.c help.c rg.c
 	gcc main.c help.c rg.c -lm -o reneel.out
