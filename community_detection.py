@@ -99,12 +99,15 @@ def visualize_communities(partition, G, pos, show=True):
         plt.show()
 
 
-def parallel_display(partitions, G, pos):
+def parallel_display(algs, partitions, G, pos):
+    fig = plt.figure(figsize=(19.20, 10.80))
     length = len(partitions)
     for i in range(length):
-        plt.subplot(1, length, i+1)
+        ax = fig.add_subplot(2, 2, i+1)
+        ax.title.set_text(algs[i].__name__)
         visualize_communities(partitions[i], G, pos, show=False)
-    plt.show()
+    # plt.show()
+    plt.savefig(f"results/{G.name}.png")
 
 def clauset_newman_moore(G):
     partition = {}
@@ -183,8 +186,10 @@ def non_lfr_runs(algorithms):
         print(
             f"The final modularity obtained by {algorithms[idx].__name__} on the Karate Club graph was " +
             "%.4f" % metrics[idx][2])
+        print("========================================================")
 
-    parallel_display(partitions, karate_g, pos)
+
+    parallel_display(algorithms, partitions, karate_g, pos)
 
     # simple Caveman graph
     caveman_g = generate_caveman_graph(cliques=4, size=6)
@@ -207,11 +212,9 @@ def non_lfr_runs(algorithms):
         print(
             f"The final modularity obtained by {algorithms[idx].__name__} on the Caveman graph was " +
             "%.4f" % metrics[idx][2])
+        print("========================================================")
 
-    parallel_display(partitions, caveman_g, pos)
-
-
-
+    parallel_display(algorithms, partitions, caveman_g, pos)
 
 
 def main():
@@ -246,8 +249,10 @@ def main():
                 f"The performance obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][1])
             print(
                 f"The NMI score obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][2])
+            print("========================================================")
 
-        parallel_display(partitions, G, pos)
+
+        parallel_display(algorithms, partitions, G, pos)
 
 if __name__ == "__main__":
     main()
