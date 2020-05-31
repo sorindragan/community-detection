@@ -63,11 +63,16 @@ def genrate_lfr_graph(size=250):
 
     params = {"n":size, "tau1":2, "tau2":1.1, "mu":0.1, "min_degree":20, "max_degree":50}
     
-    G = LFR_benchmark_graph(params["n"], params["tau1"], params["tau2"], params["mu"], 
-                            min_degree=params["min_degree"],
-                            max_degree=params["max_degree"],
-                            max_iters=5000, seed = 10,
-                            )
+    G = None
+    while G is None:
+        try:
+            G = LFR_benchmark_graph(params["n"], params["tau1"], params["tau2"], params["mu"],
+                                    min_degree=params["min_degree"],
+                                    max_degree=params["max_degree"],
+                                    max_iters=5000, seed=10,
+                                    )
+        except:
+            pass
     print("Generation Completed")
 
     # get the communities from the node attributes of the graph
@@ -107,7 +112,7 @@ def parallel_display(algs, partitions, G, pos):
         ax.title.set_text(algs[i].__name__)
         visualize_communities(partitions[i], G, pos, show=False)
     # plt.show()
-    plt.savefig(f"results/{G.name}.png")
+    plt.savefig(f"results/{G.name}-N={len(G.nodes())}.png")
 
 def clauset_newman_moore(G):
     partition = {}
