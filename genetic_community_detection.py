@@ -9,7 +9,7 @@ from community import modularity
 class GCM():
 
     def __init__(self, iterations=-1, pop_size=-1, alpha=0.4, theta=0.2, xi=0.5, beta=0.1,
-                 fitness_func=modularity):
+                 fitness_func=modularity, verbose=False):
         self.iterations     = iterations
         self.pop_size       = pop_size
         self.alpha          = alpha
@@ -17,6 +17,7 @@ class GCM():
         self.xi             = xi
         self.beta           = beta
         self.fitness_func   = fitness_func
+        self.verbose        = verbose
     
     def convert_to_sequence(self, partition):
         communities_dict = defaultdict(list)
@@ -94,14 +95,14 @@ class GCM():
 
     def gcm(self, G):
         nodes = G.nodes()
-        self.iterations = len(nodes) * 5 if self.iterations == -1 else self.iterations
-        self.pop_size = len(nodes) * 3 if self.pop_size == -1 else self.pop_size
+        self.iterations = len(nodes) * 4 if self.iterations == -1 else self.iterations
+        self.pop_size = len(nodes) * 2 if self.pop_size == -1 else self.pop_size
 
         start_time = time.time()
 
         population = self.initialization(G, nodes)
         for i in range(self.iterations):
-            if i % 20 == 0:
+            if self.verbose and (i % 20 == 0):
                 print(f"Best Candidate: {population[0]}")
                 print(f"Step: {i} out of {self.iterations}")
                 print(
@@ -109,8 +110,10 @@ class GCM():
 
             population = self.get_next_generation(G, population)
         
-        print(f"GCM ran in {time.time() - start_time} seconds")
+        run_time = time.time() - start_time
+        if self.verbose:
+            print(f"GCM ran in {run_time} seconds")
         
         partition = dict(enumerate(population[0]))
-        return partition, self.convert_to_sequence(partition)
+        return partition, self.convert_to_sequence(partition), run_time
 

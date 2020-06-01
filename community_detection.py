@@ -1,5 +1,6 @@
 import os
 import time
+import json
 import itertools
 import networkx as nx
 import matplotlib.cm as cm
@@ -17,7 +18,10 @@ from networkx.algorithms.community.quality import coverage, performance
 
 from genetic_community_detection import GCM
 
-
+NAMES = ["CNM", "Louvain", "RenEEL", "GenCom"]
+RESULTS_S = {"CNM": {},"Louvain": {},"RenEEL": {}, "GenCom": {}}
+RESULTS_LFR = {"CNM": {}, "Louvain": {}, "RenEEL": {}, "GenCom": {}}
+VERBOSE = False
 
 def convert_to_sequence(partition):
     communities_dict = defaultdict(list)
@@ -73,27 +77,17 @@ def genrate_lfr_graph(size=250):
                                     )
         except:
             pass
-    print("Generation Completed")
+    
+    if VERBOSE:
+        print("Generation Completed")
 
-    # get the communities from the node attributes of the graph
     comm_list = set([frozenset(G.nodes[v]['community']) for v in G])
     comm_dict = {comm: idx for idx, comm in enumerate(comm_list)}
 
     partition = {v:comm_dict[frozenset(G.nodes[v]['community'])] for v in G}
     communities = convert_to_sequence(partition)
-    # print(partition)
     
     return G, partition, communities
-
-def visualize_graph(G):
-    options = {
-        'node_color': 'black',
-        'node_size': 50,
-        'width': 2,
-        }
-    plt.subplot()
-    nx.draw(G, **options)
-    plt.show()
 
 def visualize_communities(partition, G, pos, show=True):
     cmap = cm.get_cmap('viridis', max(partition.values()) + 1)
@@ -111,6 +105,7 @@ def parallel_display(algs, partitions, G, pos):
         ax = fig.add_subplot(2, 2, i+1)
         ax.title.set_text(algs[i].__name__)
         visualize_communities(partitions[i], G, pos, show=False)
+    
     # plt.show()
     plt.savefig(f"results/{G.name}-N={len(G.nodes())}.png")
 
@@ -118,18 +113,22 @@ def clauset_newman_moore(G):
     partition = {}
     start_time = time.time()
     communities = greedy_modularity_communities(G)
-    print(f"Clauset Newman Moore ran in {time.time() - start_time} seconds")
+    run_time = time.time() - start_time
+    if VERBOSE:
+        print(f"Clauset Newman Moore ran in {run_time} seconds")
     for idx, c in enumerate(communities):
         for node in c:
             partition[node] = idx
-    return partition, communities
+    return partition, communities, run_time
 
 def louvain(G):
     start_time = time.time()
     partition = community_louvain.best_partition(G)
-    print(f"Louvain ran in {time.time() - start_time} seconds")
+    run_time = time.time() - start_time
+    if VERBOSE:
+        print(f"Louvain ran in {run_time} seconds")
     communities = convert_to_sequence(partition)
-    return partition, communities
+    return partition, communities, run_time
 
 
 def reneel(G):
@@ -139,7 +138,9 @@ def reneel(G):
 
     start_time = time.time()
     os.system('cd RenEEL-Modularity-master/;make')
-    print(f"RenEEL-Modularity-based ran in {time.time() - start_time} seconds")
+    run_time = time.time() - start_time
+    if VERBOSE:
+        print(f"RenEEL-Modularity-based ran in {run_time} seconds")
 
     with open("RenEEL-Modularity-master/partition.txt", "r") as f:
         reneel_partition = dict(
@@ -149,25 +150,7 @@ def reneel(G):
 
     os.system('cd RenEEL-Modularity-master/;make clean')
 
-    return reneel_partition, reneel_communities
-
-
-
-def individual_runs(G, pos, target_partition=[]):
-    partition, communities = clauset_newman_moore(G)
-    visualize_communities(partition, G, pos)
-    
-    nmi = normalized_mutual_info_score(convert_to_array(target_partition),
-                                       convert_to_array(partition))
-    print('NMI: {:.4f}'.format(nmi))
-
-    partition, communities = louvain(G)
-    visualize_communities(partition, G, pos)
-    
-    nmi = normalized_mutual_info_score(convert_to_array(target_partition),
-                                       convert_to_array(partition))
-    print('NMI: {:.4f}'.format(nmi))
-
+    return reneel_partition, reneel_communities, run_time
 
 def non_lfr_runs(algorithms):
     # Karate Club graph
@@ -181,22 +164,33 @@ def non_lfr_runs(algorithms):
                 modularity(karate_g, r[1]),)
                 for r in results]
 
+    runtimes = [r[2] for r in results]
+
     for idx in range(len(metrics)):
-        print(
-            f"The coverage obtained by {algorithms[idx].__name__} on the Karate Club graph was " +
-            "%.4f" % metrics[idx][0])
-        print(
-            f"The performance obtained by {algorithms[idx].__name__} on the Karate Club graph was " +
-            "%.4f" % metrics[idx][1])
-        print(
-            f"The final modularity obtained by {algorithms[idx].__name__} on the Karate Club graph was " +
-            "%.4f" % metrics[idx][2])
-        print("========================================================")
+        RESULTS_S[NAMES[idx]] = {"Karate":
+            {
+                "coverage": metrics[idx][0],
+                "performance": metrics[idx][1],
+                "modularity": metrics[idx][2],
+                "runtime": runtimes[idx],
+            }}
+
+        If VERBOSE:
+            print(
+                f"The coverage obtained by {algorithms[idx].__name__} on the Karate Club graph was " +
+                "%.4f" % metrics[idx][0])
+            print(
+                f"The performance obtained by {algorithms[idx].__name__} on the Karate Club graph was " +
+                "%.4f" % metrics[idx][1])
+            print(
+                f"The final modularity obtained by {algorithms[idx].__name__} on the Karate Club graph was " +
+                "%.4f" % metrics[idx][2])
+            print("========================================================")
 
 
     parallel_display(algorithms, partitions, karate_g, pos)
 
-    # simple Caveman graph
+    # simple Caveman graph 4 6
     caveman_g = generate_caveman_graph(cliques=4, size=6)
     pos = nx.spring_layout(caveman_g)
     results = [alg(caveman_g) for alg in algorithms]
@@ -207,35 +201,79 @@ def non_lfr_runs(algorithms):
                 modularity(caveman_g, r[1]),)
                 for r in results]
 
+    runtimes = [r[2] for r in results]
+
     for idx in range(len(metrics)):
-        print(
-            f"The coverage obtained by {algorithms[idx].__name__} on the Caveman graph was " +
-            "%.4f" % metrics[idx][0])
-        print(
-            f"The performance obtained by {algorithms[idx].__name__} on the Caveman graph was " +
-            "%.4f" % metrics[idx][1])
-        print(
-            f"The final modularity obtained by {algorithms[idx].__name__} on the Caveman graph was " +
-            "%.4f" % metrics[idx][2])
-        print("========================================================")
+        RESULTS_S[NAMES[idx]] = {"Caveman46":
+            {
+                "coverage": metrics[idx][0],
+                "performance": metrics[idx][1],
+                "modularity": metrics[idx][2],
+                "runtime": runtimes[idx],
+            }}
+        if VERBOSE:
+            print(
+                f"The coverage obtained by {algorithms[idx].__name__} on the Caveman46 graph was " +
+                "%.4f" % metrics[idx][0])
+            print(
+                f"The performance obtained by {algorithms[idx].__name__} on the Caveman46 graph was " +
+                "%.4f" % metrics[idx][1])
+            print(
+                f"The final modularity obtained by {algorithms[idx].__name__} on the Caveman46 graph was " +
+                "%.4f" % metrics[idx][2])
+            print("========================================================")
+
+    parallel_display(algorithms, partitions, caveman_g, pos)
+
+    # simple Caveman graph 7 3
+    caveman_g = generate_caveman_graph(cliques=7, size=3)
+    pos = nx.spring_layout(caveman_g)
+    results = [alg(caveman_g) for alg in algorithms]
+    partitions = [r[0] for r in results]
+
+    metrics = [(coverage(caveman_g, r[1]),
+                performance(caveman_g, r[1]),
+                modularity(caveman_g, r[1]),)
+               for r in results]
+
+    runtimes = [r[2] for r in results]
+
+    for idx in range(len(metrics)):
+        RESULTS_S[NAMES[idx]] = {"Caveman73":
+            {
+                "coverage": metrics[idx][0],
+                "performance": metrics[idx][1],
+                "modularity": metrics[idx][2],
+                "runtime": runtimes[idx],
+            }}
+        if VERBOSE:
+            print(
+                f"The coverage obtained by {algorithms[idx].__name__} on the Caveman73 graph was " +
+                "%.4f" % metrics[idx][0])
+            print(
+                f"The performance obtained by {algorithms[idx].__name__} on the Caveman73 graph was " +
+                "%.4f" % metrics[idx][1])
+            print(
+                f"The final modularity obtained by {algorithms[idx].__name__} on the Caveman73 graph was " +
+                "%.4f" % metrics[idx][2])
+            print("========================================================")
 
     parallel_display(algorithms, partitions, caveman_g, pos)
 
 
 def main():
-    print("Start process")
+    if VERBOSE:
+        print("Start process")
     
-    gcm = GCM()
-    algorithms = [clauset_newman_moore, louvain, reneel, gcm.gcm]
+    algorithms = [clauset_newman_moore, louvain, reneel, GCM().gcm]
 
     # small graphs
     non_lfr_runs(algorithms)
 
     # lfr benchmark graphs
-    sizes = [250, 500, 600, 700, 800, 900, 1000, 1200, 2000, 2500, 2800, 3000]
+    sizes = [250, 400, 600, 800, 1000, 1500, 2000, 2500, 3000]
     for n in sizes:
         G, target_partition, target_communities = genrate_lfr_graph(size=n)
-        # visualize_graph(G)
         pos = nx.spring_layout(G)
 
         results = [alg(G) for alg in algorithms]
@@ -247,17 +285,32 @@ def main():
                                                 ))
                     for r in results]
         
+        runtimes = [r[2] for r in results]
+          
         for idx in range(len(metrics)):
-            print(
-                f"The coverage obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][0])
-            print(
-                f"The performance obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][1])
-            print(
-                f"The NMI score obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][2])
-            print("========================================================")
-
+            RESULTS_LFR[NAMES[idx]] = {n:
+            {
+                "coverage": metrics[idx][0],
+                "performance": metrics[idx][1],
+                "NMI": metrics[idx][2],
+                "runtime": runtimes[idx],
+            }}
+            if VERBOSE:
+                print(
+                    f"The coverage obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][0])
+                print(
+                    f"The performance obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][1])
+                print(
+                    f"The NMI score obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][2])
+                print("========================================================")
 
         parallel_display(algorithms, partitions, G, pos)
+
+    with open('results/small.json', 'w') as fs:
+        json.dump(RESULTS_S, fs)
+    
+    with open('results/lfr.json', 'w') as fb:
+        json.dump(RESULTS_LFR, fb)
 
 if __name__ == "__main__":
     main()

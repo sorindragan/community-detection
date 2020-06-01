@@ -1,0 +1,43 @@
+KARTAE
+Clauset Newman Moore ran in 0.0026357173919677734 seconds
+Louvain ran in 0.007288217544555664 seconds
+RenEEL-Modularity-based ran in 0.14995622634887695 seconds
+GCM ran in 21.80763864517212 seconds
+
+The coverage obtained by clauset_newman_moore on the Karate Club graph was 0.7564
+The performance obtained by clauset_newman_moore on the Karate Club graph was 0.7148
+The final modularity obtained by clauset_newman_moore on the Karate Club graph was 0.3807
+========================================================
+The coverage obtained by louvain on the Karate Club graph was 0.7308
+The performance obtained by louvain on the Karate Club graph was 0.8039
+The final modularity obtained by louvain on the Karate Club graph was 0.4188
+========================================================
+The coverage obtained by reneel on the Karate Club graph was 0.7308
+The performance obtained by reneel on the Karate Club graph was 0.8039
+The final modularity obtained by reneel on the Karate Club graph was 0.4198
+========================================================
+The coverage obtained by gcm on the Karate Club graph was 0.7949
+The performance obtained by gcm on the Karate Club graph was 0.5971
+The final modularity obtained by gcm on the Karate Club graph was 0.2949
+
+CAVEMAN
+Clauset Newman Moore ran in 0.0014150142669677734 seconds
+Louvain ran in 0.003277301788330078 seconds
+RenEEL-Modularity-based ran in 0.17332983016967773 seconds
+GCM ran in 19.697834968566895 seconds
+
+The coverage obtained by clauset_newman_moore on the Caveman graph was 0.9333
+The performance obtained by clauset_newman_moore on the Caveman graph was 0.9710
+The final modularity obtained by clauset_newman_moore on the Caveman graph was 0.6833
+========================================================
+The coverage obtained by louvain on the Caveman graph was 0.9333
+The performance obtained by louvain on the Caveman graph was 0.9710
+The final modularity obtained by louvain on the Caveman graph was 0.6833
+========================================================
+The coverage obtained by reneel on the Caveman graph was 0.9333
+The performance obtained by reneel on the Caveman graph was 0.9710
+The final modularity obtained by reneel on the Caveman graph was 0.6833
+========================================================
+The coverage obtained by gcm on the Caveman graph was 0.7000
+The performance obtained by gcm on the Caveman graph was 0.7717
+The final modularity obtained by gcm on the Caveman graph was 0.3540
