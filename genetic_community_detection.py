@@ -95,8 +95,20 @@ class GCM():
 
     def gcm(self, G):
         nodes = G.nodes()
-        self.iterations = len(nodes) * 4 if self.iterations == -1 else self.iterations
-        self.pop_size = len(nodes) * 2 if self.pop_size == -1 else self.pop_size
+
+        tmp_size = 0
+        tmp_iter = 0
+        if (len(nodes) / 10) < 100:
+            tmp_size = 100
+            tmp_iter = 250
+        else:
+            tmp_size = int(len(nodes) / 10)
+            tmp_iter = int(len(nodes) / 3)
+
+
+        self.iterations = tmp_iter if self.iterations == -1 else self.iterations
+        self.pop_size = tmp_size if self.pop_size == -1 else self.pop_size
+
 
         start_time = time.time()
 

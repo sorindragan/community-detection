@@ -167,15 +167,14 @@ def non_lfr_runs(algorithms):
     runtimes = [r[2] for r in results]
 
     for idx in range(len(metrics)):
-        RESULTS_S[NAMES[idx]] = {"Karate":
-            {
+        RESULTS_S[NAMES[idx]]["Karate"] = {
                 "coverage": metrics[idx][0],
                 "performance": metrics[idx][1],
                 "modularity": metrics[idx][2],
                 "runtime": runtimes[idx],
-            }}
+            }
 
-        If VERBOSE:
+        if VERBOSE:
             print(
                 f"The coverage obtained by {algorithms[idx].__name__} on the Karate Club graph was " +
                 "%.4f" % metrics[idx][0])
@@ -204,13 +203,12 @@ def non_lfr_runs(algorithms):
     runtimes = [r[2] for r in results]
 
     for idx in range(len(metrics)):
-        RESULTS_S[NAMES[idx]] = {"Caveman46":
-            {
+        RESULTS_S[NAMES[idx]]["Caveman46"] = {
                 "coverage": metrics[idx][0],
                 "performance": metrics[idx][1],
                 "modularity": metrics[idx][2],
                 "runtime": runtimes[idx],
-            }}
+            }
         if VERBOSE:
             print(
                 f"The coverage obtained by {algorithms[idx].__name__} on the Caveman46 graph was " +
@@ -239,13 +237,12 @@ def non_lfr_runs(algorithms):
     runtimes = [r[2] for r in results]
 
     for idx in range(len(metrics)):
-        RESULTS_S[NAMES[idx]] = {"Caveman73":
-            {
+        RESULTS_S[NAMES[idx]]["Caveman73"] = {
                 "coverage": metrics[idx][0],
                 "performance": metrics[idx][1],
                 "modularity": metrics[idx][2],
                 "runtime": runtimes[idx],
-            }}
+            }
         if VERBOSE:
             print(
                 f"The coverage obtained by {algorithms[idx].__name__} on the Caveman73 graph was " +
@@ -270,6 +267,9 @@ def main():
     # small graphs
     non_lfr_runs(algorithms)
 
+    with open('results/small.json', 'w') as fs:
+        json.dump(RESULTS_S, fs)
+
     # lfr benchmark graphs
     sizes = [250, 400, 600, 800, 1000, 1500, 2000, 2500, 3000]
     for n in sizes:
@@ -288,13 +288,12 @@ def main():
         runtimes = [r[2] for r in results]
           
         for idx in range(len(metrics)):
-            RESULTS_LFR[NAMES[idx]] = {n:
-            {
+            RESULTS_LFR[NAMES[idx]][n] = {
                 "coverage": metrics[idx][0],
                 "performance": metrics[idx][1],
                 "NMI": metrics[idx][2],
                 "runtime": runtimes[idx],
-            }}
+            }
             if VERBOSE:
                 print(
                     f"The coverage obtained by {algorithms[idx].__name__} was " + "%.4f" % metrics[idx][0])
@@ -305,9 +304,6 @@ def main():
                 print("========================================================")
 
         parallel_display(algorithms, partitions, G, pos)
-
-    with open('results/small.json', 'w') as fs:
-        json.dump(RESULTS_S, fs)
     
     with open('results/lfr.json', 'w') as fb:
         json.dump(RESULTS_LFR, fb)
