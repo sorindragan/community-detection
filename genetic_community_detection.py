@@ -128,4 +128,3 @@ class GCM():
         
         partition = dict(enumerate(population[0]))
         return partition, self.convert_to_sequence(partition), run_time
-

@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import json
 import itertools
@@ -262,7 +263,10 @@ def main():
     if VERBOSE:
         print("Start process")
     
-    algorithms = [clauset_newman_moore, louvain, reneel, GCM().gcm]
+    if len(sys.argv) > 1 and str(sys.argv[1]) == "-w":
+        algorithms = [clauset_newman_moore, louvain, reneel]
+    else:
+        algorithms = [clauset_newman_moore, louvain, reneel, GCM().gcm]
 
     # small graphs
     non_lfr_runs(algorithms)
@@ -272,6 +276,7 @@ def main():
 
     # lfr benchmark graphs
     sizes = [250, 400, 600, 800, 1000, 1500, 2000, 2500, 3000]
+    # sizes = [500, 1000, 2000, 3000, 4000]
     for n in sizes:
         G, target_partition, target_communities = genrate_lfr_graph(size=n)
         pos = nx.spring_layout(G)
@@ -310,5 +315,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
