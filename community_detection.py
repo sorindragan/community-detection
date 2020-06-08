@@ -66,8 +66,10 @@ def genrate_lfr_graph(size=250):
     -> seed (integer, random_state, or None (default)) – indicator of random number generation state
     """
 
-    params = {"n":size, "tau1":2, "tau2":1.1, "mu":0.1, "min_degree":20, "max_degree":50}
+    # params = {"n":size, "tau1":2, "tau2":1.1, "mu":0.1, "min_degree":20, "max_degree":50}
+    params = {"n":size, "tau1":2, "tau2":1.1, "mu":0.4, "min_degree":20, "max_degree":50}
     
+
     G = None
     while G is None:
         try:
@@ -269,13 +271,13 @@ def main():
         algorithms = [clauset_newman_moore, louvain, reneel, GCM().gcm]
 
     # small graphs
-    non_lfr_runs(algorithms)
+    # non_lfr_runs(algorithms)
 
     with open('results/small.json', 'w') as fs:
         json.dump(RESULTS_S, fs)
 
     # lfr benchmark graphs
-    sizes = [250, 400, 600, 800, 1000, 1500, 2000, 2500, 3000]
+    sizes = [250, 500, 1000, 1500, 2000, 2500, 3000]
     # sizes = [500, 1000, 2000, 3000, 4000]
     for n in sizes:
         G, target_partition, target_communities = genrate_lfr_graph(size=n)

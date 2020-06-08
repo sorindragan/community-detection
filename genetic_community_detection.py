@@ -95,9 +95,8 @@ class GCM():
 
     def gcm(self, G):
         nodes = G.nodes()
-
-        tmp_size = 0
-        tmp_iter = 0
+        tmp_size, tmp_iter = 0, 0
+        
         if (len(nodes) / 10) < 100:
             tmp_size = 100
             tmp_iter = 250
