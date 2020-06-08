@@ -44,7 +44,7 @@ def main():
     result_dict = read_json()
     sizes = [250, 400, 600, 800, 1000, 1500, 2000, 2500, 3000]
     # print(get_nmi_values_for(sizes, result_dict, "GenCom"))
-    for rtype in ["Coverage", "Performance", "Runtime"]:
+    for rtype in ["Coverage", "Performance", "Runtime", "Nmi"]:
         plot_result(sizes, result_dict, result_type=rtype)
 
 

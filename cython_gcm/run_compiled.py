@@ -7,14 +7,14 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 
 
-G = LFR_benchmark_graph(
-        250, 2, 1.1, 0.1,
-        min_degree=20,
-        max_degree=50,
-        max_iters=5000, 
-        seed=10,
-        )
-# G = nx.karate_club_graph()
+# G = LFR_benchmark_graph(
+#         250, 2, 1.1, 0.4,
+#         min_degree=20,
+#         max_degree=50,
+#         max_iters=5000, 
+#         seed=10,
+#         )
+G = nx.karate_club_graph()
 pos = nx.spring_layout(G)
 
 partition = gcm.process(G, modularity)

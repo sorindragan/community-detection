@@ -5,13 +5,22 @@ import numpy as np
 # cdef float theta = 0.2
 # cdef float xi = 0.5
 # cdef float beta = 0.1
-# cdef float rr = 0.2
+# cdef float rr = 0
 
+# candidate1
+# cdef float alpha = 0.3
+# cdef float theta = 0.5
+# cdef float xi = 0.05
+# cdef float beta = 0.02
+# cdef float rr = 0.5
+
+# candidate2
 cdef float alpha = 0.1
-cdef float theta = 0.5
-cdef float xi = 0.1
-cdef float beta = 0.02
+cdef float theta = 0.4
+cdef float xi = 0.05
+cdef float beta = 0.4
 cdef float rr = 0.5
+
 
 cdef list initialization(G, int pop_size):
     global alpha
@@ -91,10 +100,10 @@ def process(G, fitness_func):
     cdef list population
     
     if (length / 10) <= 100:
-        pop_size = 100
+        pop_size = 200
         iterations = 350
     else:
-        pop_size = 200
+        pop_size = 300
         iterations = 700
 
     population = initialization(G, pop_size)
@@ -111,8 +120,8 @@ def process(G, fitness_func):
             else:
                 premature_stop = 0
             curr_fitness = max_fitness
-            print(i)
-            print(max_fitness)
+            # print(i)
+            # print(max_fitness)
         if premature_stop == 10:
             break
     

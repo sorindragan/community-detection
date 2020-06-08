@@ -17,8 +17,6 @@ from networkx.algorithms.community import modularity
 from networkx.generators.community import LFR_benchmark_graph
 from networkx.algorithms.community.quality import coverage, performance
 
-from genetic_community_detection import GCM
-
 NAMES = ["CNM", "Louvain", "RenEEL", "GenCom"]
 RESULTS_S = {"CNM": {},"Louvain": {},"RenEEL": {}, "GenCom": {}}
 RESULTS_LFR = {"CNM": {}, "Louvain": {}, "RenEEL": {}, "GenCom": {}}
@@ -110,7 +108,7 @@ def parallel_display(algs, partitions, G, pos):
         visualize_communities(partitions[i], G, pos, show=False)
     
     # plt.show()
-    plt.savefig(f"results/{G.name}-N={len(G.nodes())}.png")
+    plt.savefig(f"results/{G.name}-u04-N={len(G.nodes())}.png")
 
 def clauset_newman_moore(G):
     partition = {}
@@ -154,6 +152,18 @@ def reneel(G):
     os.system('cd RenEEL-Modularity-master/;make clean')
 
     return reneel_partition, reneel_communities, run_time
+
+def gcm(G):
+    os.system("cd cython_gcm/;python setup.py build_ext --inplace")
+    from cython_gcm import gcm
+    start_time = time.time()
+    partition = gcm.process(G, community_modularity)
+    run_time = time.time() - start_time
+    if VERBOSE:
+        print(f"GCM ran in {run_time} seconds")
+    communities = convert_to_sequence(partition)
+    return partition, communities, run_time
+
 
 def non_lfr_runs(algorithms):
     # Karate Club graph
@@ -268,12 +278,12 @@ def main():
     if len(sys.argv) > 1 and str(sys.argv[1]) == "-w":
         algorithms = [clauset_newman_moore, louvain, reneel]
     else:
-        algorithms = [clauset_newman_moore, louvain, reneel, GCM().gcm]
+        algorithms = [clauset_newman_moore, louvain, reneel, gcm]
 
     # small graphs
-    # non_lfr_runs(algorithms)
+    non_lfr_runs(algorithms)
 
-    with open('results/small.json', 'w') as fs:
+    with open('results/small_c2.json', 'w') as fs:
         json.dump(RESULTS_S, fs)
 
     # lfr benchmark graphs
@@ -281,6 +291,13 @@ def main():
     # sizes = [500, 1000, 2000, 3000, 4000]
     for n in sizes:
         G, target_partition, target_communities = genrate_lfr_graph(size=n)
+        nodes_no = n
+        edges_no = G.number_of_edges()
+        avg_degree = sum([G.degree[i] for i in range(n)]) / nodes_no
+        print("========================================================")
+        print(nodes_no, edges_no, avg_degree)
+        print("========================================================")
+
         pos = nx.spring_layout(G)
 
         results = [alg(G) for alg in algorithms]
@@ -298,7 +315,7 @@ def main():
             RESULTS_LFR[NAMES[idx]][n] = {
                 "coverage": metrics[idx][0],
                 "performance": metrics[idx][1],
-                "NMI": metrics[idx][2],
+                "nmi": metrics[idx][2],
                 "runtime": runtimes[idx],
             }
             if VERBOSE:
@@ -312,7 +329,7 @@ def main():
 
         parallel_display(algorithms, partitions, G, pos)
     
-    with open('results/lfr.json', 'w') as fb:
+    with open('results/lfr_c2_u04.json', 'w') as fb:
         json.dump(RESULTS_LFR, fb)
 
 if __name__ == "__main__":
