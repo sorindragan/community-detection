@@ -1,7 +1,9 @@
 # Modularity-based Community Detection algorithms
 
+TODO: short description
+
 #### Usage
-Install the dependencies from requirements.txt.
+Install the dependencies from requirements.txt. As the code for RenEEL is written in C, you also need to have **gcc**.
 To run all tests:
 ```sh
 $ python community_detection.py
