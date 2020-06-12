@@ -1,4 +1,4 @@
-# Modularity-based Community Detection algorithms
+# Modularity-based Community Detection algorithms comparison
 
 The following 4 algorithms are part of this experimental study: Clouset-Newman-Moore, Louvain, RenEEL, a genetic algorithm.
 
