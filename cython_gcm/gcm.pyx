@@ -8,18 +8,18 @@ import numpy as np
 # cdef float rr = 0
 
 # candidate1
-# cdef float alpha = 0.3
-# cdef float theta = 0.5
-# cdef float xi = 0.05
-# cdef float beta = 0.02
-# cdef float rr = 0.5
+cdef float alpha = 0.3
+cdef float theta = 0.5
+cdef float xi = 0.05
+cdef float beta = 0.02
+cdef float rr = 0.5
 
 # candidate2
-cdef float alpha = 0.1
-cdef float theta = 0.4
-cdef float xi = 0.05
-cdef float beta = 0.4
-cdef float rr = 0.5
+# cdef float alpha = 0.1
+# cdef float theta = 0.4
+# cdef float xi = 0.05
+# cdef float beta = 0.4
+# cdef float rr = 0.5
 
 
 cdef list initialization(G, int pop_size):

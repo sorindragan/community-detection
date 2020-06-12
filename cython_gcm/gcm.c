@@ -4084,48 +4084,48 @@ if (!__Pyx_RefNanny) {
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_np, __pyx_t_1) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "gcm.pyx":18
+  /* "gcm.pyx":11
  * 
- * # candidate2
- * cdef float alpha = 0.1             # <<<<<<<<<<<<<<
- * cdef float theta = 0.4
+ * # candidate1
+ * cdef float alpha = 0.3             # <<<<<<<<<<<<<<
+ * cdef float theta = 0.5
  * cdef float xi = 0.05
  */
-  __pyx_v_3gcm_alpha = 0.1;
+  __pyx_v_3gcm_alpha = 0.3;
 
-  /* "gcm.pyx":19
- * # candidate2
- * cdef float alpha = 0.1
- * cdef float theta = 0.4             # <<<<<<<<<<<<<<
+  /* "gcm.pyx":12
+ * # candidate1
+ * cdef float alpha = 0.3
+ * cdef float theta = 0.5             # <<<<<<<<<<<<<<
  * cdef float xi = 0.05
- * cdef float beta = 0.4
+ * cdef float beta = 0.02
  */
-  __pyx_v_3gcm_theta = 0.4;
+  __pyx_v_3gcm_theta = 0.5;
 
-  /* "gcm.pyx":20
- * cdef float alpha = 0.1
- * cdef float theta = 0.4
+  /* "gcm.pyx":13
+ * cdef float alpha = 0.3
+ * cdef float theta = 0.5
  * cdef float xi = 0.05             # <<<<<<<<<<<<<<
- * cdef float beta = 0.4
+ * cdef float beta = 0.02
  * cdef float rr = 0.5
  */
   __pyx_v_3gcm_xi = 0.05;
 
-  /* "gcm.pyx":21
- * cdef float theta = 0.4
+  /* "gcm.pyx":14
+ * cdef float theta = 0.5
  * cdef float xi = 0.05
- * cdef float beta = 0.4             # <<<<<<<<<<<<<<
+ * cdef float beta = 0.02             # <<<<<<<<<<<<<<
  * cdef float rr = 0.5
  * 
  */
-  __pyx_v_3gcm_beta = 0.4;
+  __pyx_v_3gcm_beta = 0.02;
 
-  /* "gcm.pyx":22
+  /* "gcm.pyx":15
  * cdef float xi = 0.05
- * cdef float beta = 0.4
+ * cdef float beta = 0.02
  * cdef float rr = 0.5             # <<<<<<<<<<<<<<
  * 
- * 
+ * # candidate2
  */
   __pyx_v_3gcm_rr = 0.5;
 

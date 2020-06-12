@@ -17,6 +17,8 @@ from networkx.algorithms.community import modularity
 from networkx.generators.community import LFR_benchmark_graph
 from networkx.algorithms.community.quality import coverage, performance
 
+from args_parser import parse
+
 NAMES = ["CNM", "Louvain", "RenEEL", "GenCom"]
 RESULTS_S = {"CNM": {},"Louvain": {},"RenEEL": {}, "GenCom": {}}
 RESULTS_LFR = {"CNM": {}, "Louvain": {}, "RenEEL": {}, "GenCom": {}}
@@ -48,7 +50,7 @@ def generate_caveman_graph(cliques=5, size=4):
 
 
 # LFR benchmark graph generator
-def genrate_lfr_graph(size=250):
+def genrate_lfr_graph(size=250, mu=0.1):
     """
     -> n (int) – number of nodes
     -> tau1 (float > 1) – power law exponent for the degree distribution
@@ -71,7 +73,7 @@ def genrate_lfr_graph(size=250):
     G = None
     while G is None:
         try:
-            G = LFR_benchmark_graph(params["n"], params["tau1"], params["tau2"], params["mu"],
+            G = LFR_benchmark_graph(params["n"], params["tau1"], params["tau2"], mu,
                                     min_degree=params["min_degree"],
                                     max_degree=params["max_degree"],
                                     max_iters=5000, seed=10,
@@ -108,7 +110,7 @@ def parallel_display(algs, partitions, G, pos):
         visualize_communities(partitions[i], G, pos, show=False)
     
     # plt.show()
-    plt.savefig(f"results/{G.name}-u04-N={len(G.nodes())}.png")
+    plt.savefig(f"results/{G.name}--N={len(G.nodes())}.png")
 
 def clauset_newman_moore(G):
     partition = {}
@@ -272,25 +274,41 @@ def non_lfr_runs(algorithms):
 
 
 def main():
-    if VERBOSE:
-        print("Start process")
+    global VERBOSE
+    h, v, w, mu, mu_val = parse(' '.join(sys.argv[1:]))
     
-    if len(sys.argv) > 1 and str(sys.argv[1]) == "-w":
+    if h:
+        print("- Use -v to activate Verbose")
+        print("- Use -w to exclude the genetic algorithm from the run")
+        print("- Use -mu value to set the value of mu in the graph generators; value should be in the range (0, 1)")
+        return
+
+    if v:
+        VERBOSE = True
+    else:
+        VERBOSE = False
+
+    if w:
         algorithms = [clauset_newman_moore, louvain, reneel]
     else:
         algorithms = [clauset_newman_moore, louvain, reneel, gcm]
+    
+
+    if VERBOSE:
+        print("Start process")
 
     # small graphs
     non_lfr_runs(algorithms)
 
-    with open('results/small_c2.json', 'w') as fs:
+    with open('results/small_c1_test.json', 'w') as fs:
         json.dump(RESULTS_S, fs)
+    
+    
 
     # lfr benchmark graphs
     sizes = [250, 500, 1000, 1500, 2000, 2500, 3000]
-    # sizes = [500, 1000, 2000, 3000, 4000]
     for n in sizes:
-        G, target_partition, target_communities = genrate_lfr_graph(size=n)
+        G, target_partition, target_communities = genrate_lfr_graph(size=n, mu=mu_val)
         nodes_no = n
         edges_no = G.number_of_edges()
         avg_degree = sum([G.degree[i] for i in range(n)]) / nodes_no
@@ -329,7 +347,7 @@ def main():
 
         parallel_display(algorithms, partitions, G, pos)
     
-    with open('results/lfr_c2_u04.json', 'w') as fb:
+    with open('results/lfr_c1_test.json', 'w') as fb:
         json.dump(RESULTS_LFR, fb)
 
 if __name__ == "__main__":
