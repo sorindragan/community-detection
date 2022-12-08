@@ -9,7 +9,7 @@ boto==2.49.0
 boto3==1.13.16
 botocore==1.16.16
 cdlib==0.1.8
-certifi==2020.4.5.1
+certifi==2022.12.7
 chardet==3.0.4
 cycler==0.10.0
 Cython==0.29.17
